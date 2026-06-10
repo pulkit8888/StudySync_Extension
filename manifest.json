@@ -1,0 +1,68 @@
+{
+  "manifest_version": 3,
+  "name": "StudySync — Turn Anything You Read Into Knowledge",
+  "version": "1.0.0",
+  "description": "Capture, summarize, and organize knowledge from any webpage. AI summaries and persistent bookmarks, beautifully.",
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "StudySync",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "options_page": "src/options/index.html",
+  "permissions": ["storage", "activeTab", "sidePanel", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["injector.js"],
+      "css": ["content.css"],
+      "run_at": "document_start"
+    }
+  ],
+  "commands": {
+    "quick-summary": {
+      "suggested_key": { "default": "Alt+S" },
+      "description": "Quick AI Summary of selection"
+    },
+    "quick-bookmark": {
+      "suggested_key": { "default": "Alt+B" },
+      "description": "Quick Bookmark of selection"
+    },
+    "open-dashboard": {
+      "suggested_key": { "default": "Alt+D" },
+      "description": "Open StudySync dashboard"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content.js",
+        "services/*",
+        "storage/*",
+        "data/*",
+        "assets/*",
+        "icons/*.png",
+        "src/sidepanel/index.html"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

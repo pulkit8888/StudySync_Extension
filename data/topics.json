@@ -1,0 +1,10 @@
+[
+  {"id":"dbms","name":"DBMS","color":"#3b82f6","count":0},
+  {"id":"os","name":"Operating Systems","color":"#10b981","count":0},
+  {"id":"dsa","name":"Data Structures & Algorithms","color":"#f97316","count":0},
+  {"id":"cn","name":"Computer Networks","color":"#a855f7","count":0},
+  {"id":"oops","name":"OOPs","color":"#06b6d4","count":0},
+  {"id":"ml","name":"Machine Learning","color":"#f43f5e","count":0},
+  {"id":"web","name":"Web Development","color":"#f59e0b","count":0},
+  {"id":"sd","name":"System Design","color":"#0f766e","count":0}
+]
