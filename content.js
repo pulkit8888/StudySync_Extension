@@ -195,47 +195,80 @@ window.addEventListener("resize", b);
 let n = null,
   p = null;
 async function T(t, e) {
-  (closePanel(),
-    (p = document.createElement("div")),
-    (p.className = "ss-backdrop"),
-    p.addEventListener("click", closePanel),
-    v.appendChild(p),
-    (n = document.createElement("div")),
-    (n.className = "ss-panel"),
-    v.appendChild(n),
-    t === "summary" ? await ae(e) : await openBookmarkPanel(e),
-    requestAnimationFrame(() => {
-      (p == null ||
-        p.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: 180,
+  closePanel();
+  p = document.createElement("div");
+  p.className = "ss-backdrop";
+  p.addEventListener("click", closePanel);
+  v.appendChild(p);
+  
+  n = document.createElement("div");
+  n.className = "ss-panel";
+  v.appendChild(n);
+  
+  // Add panel-level event delegation for all close/cancel buttons
+  // This ensures listeners survive innerHTML updates during dynamic rendering
+  n.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-close], [data-cancel]");
+    if (target) {
+      event.preventDefault();
+      event.stopPropagation();
+      closePanel();
+    }
+  });
+  
+  t === "summary" ? await ae(e) : await openBookmarkPanel(e);
+  
+  requestAnimationFrame(() => {
+    if (p) {
+      p.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: 180,
+        fill: "forwards",
+      });
+    }
+    if (n) {
+      n.animate(
+        [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }],
+        {
+          duration: 280,
+          easing: "cubic-bezier(0.2, 0.9, 0.2, 1)",
           fill: "forwards",
-        }),
-        n == null ||
-          n.animate(
-            [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }],
-            {
-              duration: 280,
-              easing: "cubic-bezier(0.2, 0.9, 0.2, 1)",
-              fill: "forwards",
-            },
-          ));
-    }));
+        },
+      );
+    }
+  });
 }
 function closePanel() {
-  (n == null || n.remove(), p == null || p.remove(), (n = null), (p = null));
+    console.log("CLOSE PANEL RUNNING");
+
+    if (n) {
+        n.remove();
+        n = null;
+    }
+
+    if (p) {
+        p.remove();
+        p = null;
+    }
 }
-document.addEventListener("keydown", (t) => {
-  t.key === "Escape" && (b(), closePanel());
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    b();
+    closePanel();
+  }
 });
+
 async function ae(t) {
-  var o;
   if (!n) return;
-  const e = (i, y) => {
-      var c;
-      n &&
-        ((n.innerHTML = `
+
+  const render = (bulletsHtml, loading) => {
+    if (!n) return;
+
+    n.innerHTML = `
       ${R("AI Summary", "Temporary insight — nothing is saved to your knowledge base.")}
+
       <div class="ss-panel-body">
+
         <section class="ss-section">
           <div class="ss-label">Selected content</div>
           <div class="ss-quote">${x(t)}</div>
@@ -243,48 +276,72 @@ async function ae(t) {
 
         <section class="ss-section">
           <div class="ss-label">Summary</div>
+
           <div class="ss-summary-card">
             <div class="ss-summary-head">
               <span class="ss-spark"></span>
               <span>Key takeaways</span>
             </div>
+
             <ul class="ss-bullets">
-              ${i}
+              ${bulletsHtml}
             </ul>
           </div>
         </section>
 
         <div class="ss-panel-actions">
-          <button class="ss-btn-ghost" data-close>Close</button>
-          <button class="ss-btn ${y ? "is-disabled" : ""}" data-save-summary>${y ? "Generating…" : "Save summary"}</button>
+          <button type="button" class="ss-btn-ghost" data-close>
+            Close
+          </button>
+
+          <button
+            type="button"
+            class="ss-btn ${loading ? "is-disabled" : ""}"
+            data-save-summary
+          >
+            ${loading ? "Generating..." : "Save summary"}
+          </button>
         </div>
+
       </div>
-    `),
-        (c = n.querySelector("[data-close]")) == null ||
-          c.addEventListener("click", closePanel));
-    },
-    a = Array.from({ length: 4 })
-      .map(
-        () =>
-          `<li><span style="display:inline-block;height:10px;width:${60 + Math.floor(Math.random() * 30)}%;background:linear-gradient(90deg,#eef0f3,#e3e6ea,#eef0f3);background-size:200% 100%;border-radius:6px;animation:ss-shimmer 1.2s linear infinite"></span></li>`,
-      )
-      .join("");
-  e(a, !0);
-  const { bullets: s } = await summaryService.generateSummary(t);
-  (e(s.map((i) => `<li>${x(i)}</li>`).join(""), !1),
-    (o = n == null ? void 0 : n.querySelector("[data-save-summary]")) == null ||
-      o.addEventListener("click", async () => {
-        await summaryService.saveSummary({
-          id: generateId("sum"),
-          text: t.trim().slice(0, 240),
-          bullets: s,
-          url: location.href,
-          title: document.title,
-          createdAt: Date.now(),
-        });
-        ie("Summary saved");
-        closePanel();
-      }));
+    `;
+
+    // No need for individual close button listener - event delegation handles it
+  };
+
+  const skeleton = Array.from({ length: 4 })
+    .map(
+      () =>
+        `<li><span style="display:inline-block;height:10px;width:${60 + Math.floor(Math.random()*30)}%;background:linear-gradient(90deg,#eef0f3,#e3e6ea,#eef0f3);background-size:200% 100%;border-radius:6px;animation:ss-shimmer 1.2s linear infinite"></span></li>`
+    )
+    .join("");
+
+  render(skeleton, true);
+
+  const { bullets } = await summaryService.generateSummary(t);
+
+  render(
+    bullets.map((item) => `<li>${x(item)}</li>`).join(""),
+    false
+  );
+
+  const saveBtn = n.querySelector("[data-save-summary]");
+
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      await summaryService.saveSummary({
+        id: generateId("sum"),
+        text: t.trim().slice(0, 240),
+        bullets,
+        url: location.href,
+        title: document.title,
+        createdAt: Date.now(),
+      });
+
+      ie("Summary saved");
+      closePanel();
+    };
+  }
 }
 async function openBookmarkPanel(selectedText) {
   console.log("studysync: bookmark panel opened, text:", selectedText.substring(0, 50));
@@ -360,8 +417,7 @@ async function openBookmarkPanel(selectedText) {
       </div>
     `;
 
-    const closeButton = n.querySelector("[data-close]");
-    closeButton == null || closeButton.addEventListener("click", closePanel);
+    // No need for individual close button listener - event delegation handles it
 
     const newTopicToggle = n.querySelector("[data-new-topic]");
     newTopicToggle == null || newTopicToggle.addEventListener("click", () => {
@@ -512,9 +568,9 @@ async function openBookmarkPanel(selectedText) {
   }
 
   function showBookmarkSaved(topic) {
-    var closeAction, openSideAction;
-    n &&
-      ((n.innerHTML = `
+    if (!n) return;
+    
+    n.innerHTML = `
       <div class="ss-success">
         <div class="ss-success-check">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -528,16 +584,19 @@ async function openBookmarkPanel(selectedText) {
           <button class="ss-btn" data-open-side>Open side panel</button>
         </div>
       </div>
-    `),
-      (closeAction = n.querySelector("[data-close]")) == null ||
-        closeAction.addEventListener("click", closePanel),
-      (openSideAction = n.querySelector("[data-open-side]")) == null ||
-        openSideAction.addEventListener("click", () => {
-          try {
-            chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
-          } catch {}
-          closePanel();
-        }));
+    `;
+
+    // Event delegation handles data-close button
+    // Set up data-open-side button listener
+    const openSideAction = n.querySelector("[data-open-side]");
+    if (openSideAction) {
+      openSideAction.addEventListener("click", () => {
+        try {
+          chrome.runtime.sendMessage({ type: "OPEN_SIDE_PANEL" });
+        } catch {}
+        closePanel();
+      });
+    }
   }
 
   renderBookmarkPanel();
